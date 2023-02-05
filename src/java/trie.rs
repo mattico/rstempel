@@ -51,7 +51,7 @@
 // individuals  on  behalf  of  the  Egothor  Project  and was originally
 // created by Leo Galambos (Leo.G@seznam.cz).
 
-use crate::serialize::*;
+use super::serialize::*;
 use std::io;
 use std::{collections::BTreeMap, ops::Index};
 

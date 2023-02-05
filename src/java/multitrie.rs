@@ -1,5 +1,5 @@
-use crate::serialize::*;
-use crate::trie::{Trie, TrieGet};
+use super::serialize::*;
+use super::trie::{Trie, TrieGet};
 use std::io;
 
 pub struct MultiTrie {
@@ -133,51 +133,29 @@ impl TrieGet for MultiTrie2 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     #[test]
     fn test_load_tries() {
         let trie_files = [
-            (
-                "stemmer_100.out",
-                include_bytes!("tables/stemmer_100.out").as_slice(),
-            ),
-            (
-                "stemmer_200.out",
-                include_bytes!("tables/stemmer_200.out").as_slice(),
-            ),
-            (
-                "stemmer_500.out",
-                include_bytes!("tables/stemmer_500.out").as_slice(),
-            ),
-            (
-                "stemmer_700.out",
-                include_bytes!("tables/stemmer_700.out").as_slice(),
-            ),
-            (
-                "stemmer_1000.out",
-                include_bytes!("tables/stemmer_1000.out").as_slice(),
-            ),
-            (
-                "stemmer_2000.out",
-                include_bytes!("tables/stemmer_2000.out").as_slice(),
-            ),
+            "src/tables/stemmer_100.out",
+            "src/tables/stemmer_200.out",
+            "src/tables/stemmer_500.out",
+            "src/tables/stemmer_700.out",
+            "src/tables/stemmer_1000.out",
+            "src/tables/stemmer_2000.out",
         ];
-        for (name, data) in trie_files {
-            let mut reader = DataInput::new(io::Cursor::new(data));
+        for path in trie_files {
+            let mut reader = DataInput::new(io::BufReader::new(fs::File::open(path).unwrap()));
             let multi = reader.read_string().unwrap();
             let multi = multi.contains(['M', 'm']);
             assert!(
                 multi,
                 "Expected stemmer table {} to contain a multitrie",
-                name
+                path
             );
-            match MultiTrie2::deserialize(&mut reader) {
-                Err(e) => {
-                    panic!("Loading trie {} failed with {:?}", name, e);
-                }
-                Ok(trie) => {
-                    println!("tries {}", trie.t.tries.len());
-                }
+            if let Err(e) = MultiTrie2::deserialize(&mut reader) {
+                panic!("Loading trie {} failed with {:?}", path, e);
             }
         }
     }
