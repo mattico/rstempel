@@ -38,3 +38,35 @@ impl Stemmer {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use flate2::bufread::GzDecoder;
+    use std::io::{prelude::*, BufReader};
+    use std::fs;
+
+    #[test]
+    fn test_compare_stem_to_stempel() {
+        let path = "src/tables/polimorf-out.tab.gz";
+        let file = fs::File::open(path).unwrap();
+        let mut reader = BufReader::new(GzDecoder::new(BufReader::new(file)));
+        let mut line = String::new();
+
+        let stemmer = Stemmer::load(BufReader::new(fs::File::open("src/tables/stemmer_2000.out").unwrap())).unwrap();
+
+        let mut num = 0;
+        while reader.read_line(&mut line).unwrap() > 0 {
+            num += 1;
+            let mut line = line.split_ascii_whitespace();
+            let input = line.next().unwrap();
+            let output = line.next().unwrap();
+
+            if let Some(our_output) = stemmer.stem(input) {
+                if output != our_output {
+                    panic!("On line {} input={} output={} our_output={}", num, input, output, our_output);
+                }
+            }
+        }
+    }
+}

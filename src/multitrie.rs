@@ -55,7 +55,7 @@ fn cannot_follow(after: char, goes: char) -> bool {
     }
 }
 
-fn length_pp(cmd: &String) -> usize {
+fn length_pp(cmd: &str) -> usize {
     let mut len = 0;
     let mut iter = cmd.chars();
     while let (Some(cmd), Some(arg)) = (iter.next(), iter.next()) {
