@@ -51,9 +51,14 @@
 // individuals  on  behalf  of  the  Egothor  Project  and was originally
 // created by Leo Galambos (Leo.G@seznam.cz).
 
-use byteorder::{ReadBytesExt, WriteBytesExt, BE};
+use crate::serialize::*;
 use std::io;
 use std::{collections::BTreeMap, ops::Index};
+
+pub trait TrieGet {
+    /// Return the command for the string key
+    fn get_last_on_path(&self, key: &str) -> Option<String>;
+}
 
 /// A Cell is a portion of a trie.
 #[derive(Default, Debug, Clone)]
@@ -249,10 +254,10 @@ pub mod reduce {
 
 #[derive(Default, Debug, Clone)]
 pub struct Trie {
-    rows: Vec<Row>,
-    cmds: Vec<String>,
-    root: usize,
-    forward: bool,
+    pub(crate) rows: Vec<Row>,
+    pub(crate) cmds: Vec<String>,
+    pub(crate) root: u32,
+    pub(crate) forward: bool,
 }
 
 // TODO: looks like rows and cmds are basically arenas and we're using indexes into
@@ -303,7 +308,51 @@ impl Trie {
         cmd.and_then(|idx| self.cmds.get(idx as usize)).cloned()
     }
 
-    pub fn get_last_on_path(&self, key: &str) -> Option<String> {
+    // pub fn add(&mut self, key: &str, cmd: &str) {
+    //     if cmd.is_empty() || key.is_empty() {
+    //         return;
+    //     }
+
+    //     let id_cmd = self.cmds.iter().position(|x| x == cmd).unwrap_or_else(|| {
+    //         let id = self.cmds.len();
+    //         self.cmds.push(cmd.to_string());
+    //         id
+    //     });
+
+    //     let mut node = self.root as u32;
+    //     let mut r = Some();
+    //     let rows_len = self.rows.len();
+    //     let mut chars = KeyIter::new(self.forward, key);
+    //     let last = chars.next_back().unwrap();
+    //     for ch in chars {
+    //         if let Some(n) = self.node(node, ch).and_then(|x| x.refr) {
+    //             r = self.rows.get_mut(n as usize).unwrap();
+    //         } else {
+    //             node = rows_len as u32;
+    //             self.rows.push(Row::default());
+    //             let n = self.rows.last_mut().unwrap();
+    //             r.set_ref(ch, Some(node));
+    //             r = n;
+    //         }
+    //     }
+    //     r.set_cmd(last, Some(id_cmd as u32));
+    // }
+
+    pub fn node(&self, row_idx: u32, char: char) -> Option<&Cell> {
+        self.row(row_idx)?.try_get(char)
+    }
+
+    pub fn row(&self, index: u32) -> Option<&Row> {
+        self.rows.get(index as usize)
+    }
+
+    pub fn row_mut(&mut self, index: u32) -> Option<&mut Row> {
+        self.rows.get_mut(index as usize)
+    }
+}
+
+impl TrieGet for Trie {
+    fn get_last_on_path(&self, key: &str) -> Option<String> {
         let mut now = self.row(self.root)?;
         let mut chars = KeyIter::new(self.forward, key);
         let mut last = None;
@@ -313,7 +362,7 @@ impl Trie {
                 last = self.cmds.get(idx as usize);
             }
             if let Some(idx) = now.get_ref(ch) {
-                now = self.row(idx as usize)?;
+                now = self.row(idx)?;
             } else {
                 return last.cloned();
             }
@@ -322,55 +371,15 @@ impl Trie {
             self.cmds.get(idx as usize)
         } else {
             last
-        }.cloned()
-    }
-
-    pub fn add(&mut self, key: &str, cmd: &str) {
-        if cmd.is_empty() || key.is_empty() {
-            return;
         }
-
-        let id_cmd = self.cmds.iter().position(|x| x == cmd).unwrap_or_else(|| {
-            let id = self.cmds.len();
-            self.cmds.push(cmd.to_string());
-            id
-        });
-
-        let mut node = self.root as u32;
-        let rows_len = self.rows.len();
-        let mut chars = KeyIter::new(self.forward, key);
-        let last = chars.next_back().unwrap();
-        for ch in chars {
-            if let Some(n) = r.get_ref(ch) {
-                r = self.rows.get_mut(n as usize).unwrap();
-            } else {
-                node = rows_len as u32;
-                self.rows.push(Row::default());
-                let n = self.rows.last_mut().unwrap();
-                r.set_ref(ch, Some(node));
-                r = n;
-            }
-        }
-        r.set_cmd(last, Some(id_cmd as u32));
-    }
-
-    pub fn node(&self, row_idx: impl Into<usize>, char: char) -> Option<()> {
-        self.row(row_idx)?.get_
-    }
-
-    pub fn row(&self, index: impl Into<usize>) -> Option<&Row> {
-        self.rows.get(index.into())
-    }
-
-    pub fn row_mut(&mut self, index: impl Into<usize>) -> Option<&mut Row> {
-        self.rows.get_mut(index.into())
+        .cloned()
     }
 }
 
 impl JavaSerialize for Trie {
     fn serialize<W: io::Write>(&self, writer: &mut DataOutput<W>) -> io::Result<()> {
         writer.write_bool(self.forward)?;
-        writer.write_usize(self.root)?;
+        writer.write_u32(self.root)?;
         writer.write_usize(self.cmds.len())?;
         for cmd in &self.cmds {
             writer.write_string(cmd)?;
@@ -385,8 +394,8 @@ impl JavaSerialize for Trie {
 
 impl JavaDeserialize for Trie {
     fn deserialize<R: io::Read>(reader: &mut DataInput<R>) -> io::Result<Self> {
-        let forward = reader.inner.read_u8()? != 0;
-        let root = reader.read_usize()?;
+        let forward = reader.read_bool()?;
+        let root = reader.read_u32()?;
         let num_cmds = reader.read_usize()?;
         let mut cmds = Vec::with_capacity(num_cmds);
         for _ in 0..num_cmds {
@@ -403,150 +412,6 @@ impl JavaDeserialize for Trie {
             cmds,
             rows,
         })
-    }
-}
-
-trait JavaSerialize {
-    fn serialize<W: io::Write>(&self, writer: &mut DataOutput<W>) -> io::Result<()>;
-}
-
-trait JavaDeserialize: Sized {
-    fn deserialize<R: io::Read>(reader: &mut DataInput<R>) -> io::Result<Self>;
-}
-
-/// Reads binary data in a manner compatible with
-/// [Java's DataInput class](https://docs.oracle.com/javase/7/docs/api/java/io/DataInput.html).
-struct DataInput<R: io::Read> {
-    inner: R,
-}
-
-impl<R: io::Read> DataInput<R> {
-    pub fn new(reader: R) -> Self {
-        Self { inner: reader }
-    }
-
-    /// Like Java's `readBoolean`.
-    pub fn read_bool(&mut self) -> io::Result<bool> {
-        Ok(self.inner.read_u8()? != 0)
-    }
-
-    /// Like Java's `readInt` but casts the result to `u32`, returning [`std::io::ErrorKind::InvalidData`] if the value
-    /// is negative.
-    pub fn read_u32(&mut self) -> io::Result<u32> {
-        self.inner
-            .read_i32::<BE>()?
-            .try_into()
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))
-    }
-
-    /// Like Java's `readInt` but casts the result to `usize`, returning [`std::io::ErrorKind::InvalidData`] if the value
-    /// is negative.
-    pub fn read_usize(&mut self) -> io::Result<usize> {
-        Ok(self.read_u32()? as usize)
-    }
-
-    /// Like Java's `readInt` but casts the result to `u32`, returning [`Option::None`] if the value is negative.
-    pub fn read_u32_opt(&mut self) -> io::Result<Option<u32>> {
-        Ok(self.inner.read_i32::<BE>()?.try_into().ok())
-    }
-
-    /// Like Java's `readChar`. Reads a UTF-16 code unit and converts it to a rust [`char`], returning
-    /// [`std::io::ErrorKind::InvalidData`] if the single UTF-16 code unit is not a valid UTF-16 code point.
-    pub fn read_char(&mut self) -> io::Result<char> {
-        let utf16_char = self.inner.read_u16::<BE>()?;
-        char::decode_utf16(std::iter::once(utf16_char))
-            .next()
-            .unwrap()
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))
-    }
-
-    /// Like Java's `readUTF`. Reads a modified UTF-8 string with length. Returns [`std::io::ErrorKind::InvalidData`]
-    /// if the value is not a valid UTF-8 string.
-    pub fn read_string(&mut self) -> io::Result<String> {
-        let len = self.inner.read_u16::<BE>()? as usize;
-        if len == 0 {
-            return Ok(String::new());
-        }
-        let mut buf = vec![0u8; len];
-        self.inner.read_exact(&mut buf)?;
-        let str = cesu8::from_java_cesu8(&buf)
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-        Ok(str.into_owned())
-    }
-}
-
-/// Writes binary data in a manner compatible with
-/// [Java's DataOutput class](https://docs.oracle.com/javase/7/docs/api/java/io/DataOutput.html).
-struct DataOutput<R: io::Write> {
-    pub inner: R,
-}
-
-impl<R: io::Write> DataOutput<R> {
-    pub fn new(writer: R) -> Self {
-        Self { inner: writer }
-    }
-
-    /// Like Java's `writeBoolean`.
-    pub fn write_bool(&mut self, x: bool) -> io::Result<()> {
-        self.inner.write_u8(x as u8)
-    }
-
-    /// Like Java's `writeInt`, returning [`std::io::ErrorKind::InvalidData`] if the value
-    /// is negative.
-    pub fn write_u32(&mut self, x: u32) -> io::Result<()> {
-        self.inner.write_i32::<BE>(
-            x.try_into()
-                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?,
-        )?;
-        Ok(())
-    }
-
-    /// Like Java's `writeInt`, returning [`std::io::ErrorKind::InvalidData`] if the value
-    /// is negative.
-    pub fn write_usize(&mut self, x: usize) -> io::Result<()> {
-        self.inner.write_i32::<BE>(
-            x.try_into()
-                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?,
-        )?;
-        Ok(())
-    }
-
-    /// Like Java's `writeInt` but casts the result to `u32`, returning [`Option::None`] if the value is negative.
-    pub fn write_u32_opt(&mut self, x: Option<u32>) -> io::Result<()> {
-        let x = match x {
-            Some(x) => x
-                .try_into()
-                .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?,
-            None => -1,
-        };
-        self.inner.write_i32::<BE>(x)?;
-        Ok(())
-    }
-
-    /// Like Java's `writeChar`. Writes a single UTF-16 code unit from a [`char`], returning
-    /// [`std::io::ErrorKind::InvalidData`] if the [`char`] cannot be encoded as a single UTF-16 code unit.
-    pub fn write_char(&mut self, x: char) -> io::Result<()> {
-        let mut buf = [0u16; 2];
-        let buf = x.encode_utf16(&mut buf);
-        if buf.len() != 1 {
-            return Err(io::ErrorKind::InvalidData.into());
-        }
-        self.inner.write_u16::<BE>(buf[0])
-    }
-
-    /// Like Java's `writeUTF`. Writes a modified UTF-8 string with length. Returns [`std::io::ErrorKind::InvalidData`]
-    /// if the string is longer than `u16::MAX`.
-    pub fn write_string(&mut self, x: &str) -> io::Result<()> {
-        let len: u16 = x
-            .len()
-            .try_into()
-            .map_err(|_| io::Error::from(io::ErrorKind::InvalidData))?;
-        self.inner.write_u16::<BE>(len)?;
-        if len > 0 {
-            let x = cesu8::to_java_cesu8(x);
-            self.inner.write_all(&x)?;
-        }
-        Ok(())
     }
 }
 
