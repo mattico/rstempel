@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::{io, borrow::Cow};
 use multitrie::MultiTrie2;
 use serialize::{DataInput, JavaDeserialize};

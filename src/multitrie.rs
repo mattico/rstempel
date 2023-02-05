@@ -4,20 +4,10 @@ use std::io;
 
 pub struct MultiTrie {
     tries: Vec<Trie>,
+    #[allow(dead_code)]
     forward: bool,
+    #[allow(dead_code)]
     by: i32,
-}
-
-impl JavaSerialize for MultiTrie {
-    fn serialize<W: io::Write>(&self, writer: &mut DataOutput<W>) -> io::Result<()> {
-        writer.write_bool(self.forward)?;
-        writer.write_i32(self.by)?;
-        writer.write_usize(self.tries.len())?;
-        for trie in &self.tries {
-            trie.serialize(writer)?;
-        }
-        Ok(())
-    }
 }
 
 impl JavaDeserialize for MultiTrie {
@@ -53,12 +43,6 @@ impl TrieGet for MultiTrie {
 
 pub struct MultiTrie2 {
     t: MultiTrie
-}
-
-impl JavaSerialize for MultiTrie2 {
-    fn serialize<W: io::Write>(&self, writer: &mut DataOutput<W>) -> io::Result<()> {
-        self.t.serialize(writer)
-    }
 }
 
 impl JavaDeserialize for MultiTrie2 {
@@ -136,7 +120,7 @@ impl TrieGet for MultiTrie2 {
                 None => break,
                 Some(r) => result.push_str(&r),
             }
-            if key.len() > 0 {
+            if !key.is_empty() {
                 last_key = key;
             }
         }
