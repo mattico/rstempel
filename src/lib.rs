@@ -1,15 +1,15 @@
-use std::{io, borrow::Cow};
 use multitrie::MultiTrie2;
 use serialize::{DataInput, JavaDeserialize};
-use trie::{TrieGet, Trie};
+use std::{borrow::Cow, io};
+use trie::{Trie, TrieGet};
 
-mod trie;
+mod diff;
 mod multitrie;
 mod serialize;
-mod diff;
+mod trie;
 
 pub struct Stemmer {
-    trie: Box<dyn TrieGet>
+    trie: Box<dyn TrieGet>,
 }
 
 impl Stemmer {

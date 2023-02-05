@@ -1,5 +1,5 @@
-use crate::trie::{Trie, TrieGet};
 use crate::serialize::*;
+use crate::trie::{Trie, TrieGet};
 use std::io;
 
 pub struct MultiTrie {
@@ -19,11 +19,7 @@ impl JavaDeserialize for MultiTrie {
         for _ in 0..count {
             tries.push(Trie::deserialize(reader)?);
         }
-        Ok(Self {
-            tries,
-            forward,
-            by,
-        })
+        Ok(Self { tries, forward, by })
     }
 }
 
@@ -42,7 +38,7 @@ impl TrieGet for MultiTrie {
 }
 
 pub struct MultiTrie2 {
-    t: MultiTrie
+    t: MultiTrie,
 }
 
 impl JavaDeserialize for MultiTrie2 {
@@ -91,7 +87,13 @@ fn skip<'a>(trie: &Trie, i: &'a str, cnt: usize) -> Option<&'a str> {
     Some(&i[start..end])
 }
 
-fn get_last_on_path_(trie: &Trie, key: &mut &str, last_key: &str, last_ch: &mut char, p: &mut Option<String>) -> Option<String> {
+fn get_last_on_path_(
+    trie: &Trie,
+    key: &mut &str,
+    last_key: &str,
+    last_ch: &mut char,
+    p: &mut Option<String>,
+) -> Option<String> {
     let r = trie.get_last_on_path(last_key)?;
     if r == "*" {
         return None;
@@ -164,7 +166,11 @@ mod tests {
             let mut reader = DataInput::new(io::Cursor::new(data));
             let multi = reader.read_string().unwrap();
             let multi = multi.contains(['M', 'm']);
-            assert!(multi, "Expected stemmer table {} to contain a multitrie", name);
+            assert!(
+                multi,
+                "Expected stemmer table {} to contain a multitrie",
+                name
+            );
             match MultiTrie2::deserialize(&mut reader) {
                 Err(e) => {
                     panic!("Loading trie {} failed with {:?}", name, e);

@@ -12,7 +12,7 @@ pub fn apply(orig: &str, diff: &str) -> String {
                 assert!(param.is_ascii_lowercase());
                 let par_num = ((param as u8) - b'a') as usize;
                 pos -= par_num;
-            },
+            }
             'R' => _orig[pos] = param,
             'D' => {
                 assert!(param.is_ascii_lowercase());
@@ -20,11 +20,11 @@ pub fn apply(orig: &str, diff: &str) -> String {
                 let o = pos;
                 pos -= par_num;
                 _orig.drain(pos..=o);
-            },
+            }
             'I' => {
                 pos += 1;
                 _orig.insert(pos, param);
-            },
+            }
             _ => unreachable!(),
         }
         if pos == 0 {
