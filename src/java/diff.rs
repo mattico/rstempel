@@ -17,10 +17,10 @@ pub fn apply(orig: &str, diff: &str) -> Option<String> {
             'D' => {
                 assert!(param.is_ascii_lowercase());
                 let par_num = ((param as u8) - b'a') as isize;
-                let o = usize::try_from(pos).ok()?;
+                let e = usize::try_from(pos).ok()?;
                 pos -= par_num;
                 let s = usize::try_from(pos).ok()?;
-                result.drain(s..=o);
+                result.drain(s..=e);
             }
             'I' => {
                 pos += 1;

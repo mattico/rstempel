@@ -24,10 +24,10 @@ impl JavaDeserialize for MultiTrie {
 }
 
 impl TrieGet for MultiTrie {
-    fn get_last_on_path(&self, key: &str) -> Option<String> {
+    fn get_cmd(&self, key: &str) -> Option<String> {
         let mut result = String::with_capacity(self.tries.len() * 2);
         for trie in &self.tries {
-            let r = trie.get_last_on_path(key)?;
+            let r = trie.get_cmd(key)?;
             if r == "*" {
                 return Some(result);
             }
@@ -90,14 +90,14 @@ fn skip<'a>(trie: &Trie, i: &'a str, cnt: usize) -> Option<&'a str> {
     Some(&i[start..end])
 }
 
-fn get_last_on_path_(
+fn get_cmd_(
     trie: &Trie,
     key: &mut &str,
     last_key: &str,
     last_ch: &mut char,
     prev_cmd: &mut Option<String>,
 ) -> Option<String> {
-    let r = trie.get_last_on_path(last_key)?;
+    let r = trie.get_cmd(last_key)?;
     if r == "*" {
         return None;
     }
@@ -117,13 +117,13 @@ fn get_last_on_path_(
 }
 
 impl TrieGet for MultiTrie2 {
-    fn get_last_on_path(&self, mut key: &str) -> Option<String> {
+    fn get_cmd(&self, mut key: &str) -> Option<String> {
         let mut result = String::with_capacity(self.t.tries.len() * 2);
         let mut last_key = key;
         let mut prev_cmd = None;
         let mut last_ch = ' ';
         for trie in &self.t.tries {
-            match get_last_on_path_(trie, &mut key, last_key, &mut last_ch, &mut prev_cmd) {
+            match get_cmd_(trie, &mut key, last_key, &mut last_ch, &mut prev_cmd) {
                 None => break,
                 Some(r) => result.push_str(&r),
             }
@@ -171,7 +171,7 @@ mod tests {
         let mut reader = DataInput::new(io::BufReader::new(fs::File::open(path).unwrap()));
         let _params = reader.read_string().unwrap();
         let trie = MultiTrie2::deserialize(&mut reader).unwrap();
-        let cmd = trie.get_last_on_path("Abadan").unwrap();
+        let cmd = trie.get_cmd("Abadan").unwrap();
         assert_eq!(cmd, "Ia-e");
     }
 }

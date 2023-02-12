@@ -40,6 +40,38 @@ impl Command {
             _ => None,
         }
     }
+
+    fn cannot_follow(&self, prev: Command) -> bool {
+        matches!(
+            (&self, prev),
+            (Command::Skip { .. }, Command::Skip { .. })
+                | (Command::Delete { .. }, Command::Delete { .. })
+        )
+    }
+
+    fn is_skip(&self) -> bool {
+        matches!(*self, Command::Skip { .. })
+    }
+    #[allow(dead_code)]
+    fn is_delete(&self) -> bool {
+        matches!(*self, Command::Delete { .. })
+    }
+    #[allow(dead_code)]
+    fn is_replace(&self) -> bool {
+        matches!(*self, Command::Replace { .. })
+    }
+    #[allow(dead_code)]
+    fn is_insert(&self) -> bool {
+        matches!(*self, Command::Insert { .. })
+    }
+
+    fn length_pp(&self) -> usize {
+        match *self {
+            Command::Skip { chars } | Command::Delete { chars } => chars as usize,
+            Command::Replace { .. } => 1,
+            Command::Insert { .. } => 0,
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -121,54 +153,7 @@ pub struct Trie {
     pub rows: &'static [Row],
 }
 
-pub enum StemResult {
-    /// Continue with the next trie for stemming.
-    Continue,
-    /// No edit command found, return the input word.
-    Unchanged,
-    /// Stemming completed by this trie, don't continue to the next trie.
-    Completed,
-}
-
 impl Trie {
-    fn stem(&self, commands: &'static [Command], result: &mut Vec<char>) -> StemResult {
-        let cmds = match self.get(result) {
-            None => return StemResult::Unchanged,
-            Some(c) if c.is_eom() => return StemResult::Completed,
-            Some(c) => c.lookup(commands),
-        };
-
-        // TODO: implement commands like in MultiTrie2 with the lengthPP stuff
-        let mut idx = result.len() - 1;
-        for &command in cmds {
-            match command {
-                Command::Skip { chars } => match idx.checked_sub(chars.into()) {
-                    Some(r) => idx = r,
-                    None => break,
-                },
-                Command::Delete { chars } => {
-                    let end = idx;
-                    idx = idx.saturating_sub(chars.into());
-                    result.drain(idx..end);
-                }
-                Command::Replace { char } => result[idx] = char,
-                Command::Insert { char } => {
-                    idx += 1;
-                    result.insert(idx, char);
-                }
-            }
-            if result.is_empty() {
-                return StemResult::Unchanged;
-            }
-        }
-
-        if result.is_empty() {
-            StemResult::Unchanged
-        } else {
-            StemResult::Continue
-        }
-    }
-
     fn get(&self, word: &[char]) -> Option<CommandSlice> {
         let mut row = self.rows[0];
         let mut last = None;
@@ -197,22 +182,92 @@ pub struct Stemmer {
 
 impl Stem for Stemmer {
     fn stem<'a>(&self, word: &'a str) -> Cow<'a, str> {
-        if word.len() < 3 {
+        if word.chars().count() <= 3 {
             return Cow::Borrowed(word);
         }
-        let mut result = word.chars().collect::<Vec<char>>();
-        for trie in self.tries {
-            match trie.stem(self.commands, &mut result) {
-                StemResult::Continue => {}
-                StemResult::Unchanged => return Cow::Borrowed(word),
-                StemResult::Completed => break,
+        let result = word.chars().collect::<Vec<char>>();
+        let cmds = match self.get_cmd(&result) {
+            Some(c) => c,
+            None => return Cow::Borrowed(word),
+        };
+        apply_edits(result, &cmds).map_or(Cow::Borrowed(word), Cow::from)
+    }
+}
+
+fn apply_edits(mut result: Vec<char>, cmds: &[Command]) -> Option<String> {
+    let mut pos = (result.len() - 1) as isize;
+    for &command in cmds {
+        match command {
+            Command::Skip { chars } => pos -= chars as isize,
+            Command::Delete { chars } => {
+                let e = usize::try_from(pos).ok()?;
+                pos -= chars as isize;
+                let s = usize::try_from(pos).ok()?;
+                result.drain(s..=e);
+            }
+            Command::Replace { char } => *result.get_mut(usize::try_from(pos).ok()?)? = char,
+            Command::Insert { char } => {
+                pos += 1;
+                result.insert(usize::try_from(pos).ok()?, char);
             }
         }
-        if result.is_empty() {
-            Cow::Borrowed(word)
-        } else {
-            Cow::Owned(result.into_iter().collect())
+        pos -= 1;
+    }
+    if result.is_empty() {
+        None
+    } else {
+        Some(result.into_iter().collect())
+    }
+}
+
+fn skip(key: &mut &[char], cmds: &[Command]) -> bool {
+    let cnt: usize = cmds.iter().map(|c| c.length_pp()).sum();
+    if cnt == 0 {
+        return true;
+    }
+    if cnt >= key.len() {
+        return false;
+    }
+    let end = key.len() - cnt;
+    *key = &key[..end];
+    true
+}
+
+impl Stemmer {
+    fn get_cmd(&self, mut key: &[char]) -> Option<Vec<Command>> {
+        let mut result = Vec::new();
+        let mut last_key = key;
+        let mut prev_cmds = None;
+        let mut last_cmd = None;
+        for trie in self.tries {
+            let cmd = match trie.get(last_key) {
+                Some(cs) if cs.is_eom() => break,
+                Some(cs) => cs.lookup(self.commands),
+                None => break,
+            };
+            if let Some(lc) = last_cmd {
+                if cmd[0].cannot_follow(lc) {
+                    break;
+                }
+            }
+            last_cmd = cmd.last().cloned();
+            if cmd[0].is_skip() {
+                if let Some(prev_cmds) = prev_cmds {
+                    if !skip(&mut key, prev_cmds) {
+                        break;
+                    }
+                }
+                if !skip(&mut key, cmd) {
+                    break;
+                }
+            }
+            prev_cmds = Some(cmd);
+            result.extend_from_slice(cmd);
+            if !key.is_empty() {
+                last_key = key;
+            }
         }
+        Some(result)
     }
 }
 

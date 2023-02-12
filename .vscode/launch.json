@@ -42,7 +42,7 @@
                 "args": [
                     "build",
                     "--bin",
-                    "stem"
+                    "stem_rust"
                 ]
             },
             "args": ["${input:stemWord}"]

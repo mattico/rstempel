@@ -57,7 +57,7 @@ use std::{collections::BTreeMap, ops::Index};
 
 pub trait TrieGet {
     /// Return the command for the string key
-    fn get_last_on_path(&self, key: &str) -> Option<String>;
+    fn get_cmd(&self, key: &str) -> Option<String>;
 }
 
 /// A Cell is a portion of a trie.
@@ -146,7 +146,7 @@ impl Trie {
 }
 
 impl TrieGet for Trie {
-    fn get_last_on_path(&self, key: &str) -> Option<String> {
+    fn get_cmd(&self, key: &str) -> Option<String> {
         let mut now = self.row(self.root)?;
         let mut chars = KeyIter::new(self.forward, key);
         let mut last = None;

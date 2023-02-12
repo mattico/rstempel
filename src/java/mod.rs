@@ -33,13 +33,11 @@ impl crate::Stem for Stemmer {
         if word.chars().count() <= 3 {
             return Cow::Borrowed(word); // No change
         }
-        let cmd = match self.trie.get_last_on_path(word) {
+        let cmd = match self.trie.get_cmd(word) {
             Some(c) => c,
             None => return Cow::Borrowed(word),
         };
-        diff::apply(word, &cmd)
-            .unwrap_or_else(|| word.to_owned())
-            .into()
+        diff::apply(word, &cmd).map_or(Cow::Borrowed(word), Cow::from)
     }
 }
 
