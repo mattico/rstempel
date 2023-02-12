@@ -1,6 +1,7 @@
 use std::{
+    borrow::Cow,
     collections::HashMap,
-    num::{NonZeroU16, NonZeroU32, NonZeroU8}, borrow::Cow,
+    num::{NonZeroU16, NonZeroU32},
 };
 
 use crate::Stem;
@@ -10,8 +11,8 @@ pub mod generate;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Command {
-    Skip { chars: NonZeroU8 },
-    Delete { chars: NonZeroU8 },
+    Skip { chars: u8 },
+    Delete { chars: u8 },
     Replace { char: char },
     Insert { char: char },
 }
@@ -21,14 +22,12 @@ impl Command {
         match cmd {
             '-' => {
                 assert!(param.is_ascii_lowercase());
-                let par_num = (param as u8) - b'a';
-                let chars = par_num.try_into().ok()?;
+                let chars = 1 + (param as u8) - b'a';
                 Some(Self::Skip { chars })
             }
             'D' => {
                 assert!(param.is_ascii_lowercase());
-                let par_num = (param as u8) - b'a';
-                let chars = par_num.try_into().ok()?;
+                let chars = 1 + (param as u8) - b'a';
                 Some(Self::Delete { chars })
             }
             'R' => Some(Self::Replace { char: param }),
@@ -41,7 +40,7 @@ impl Command {
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 /// Represents a slice of commands in the Stemmer's commands vec, packed into a u32.
-pub struct CommandSlice(NonZeroU32);
+pub struct CommandSlice(pub NonZeroU32);
 
 impl CommandSlice {
     #[must_use]
@@ -138,14 +137,14 @@ impl Trie {
         let mut idx = result.len() - 1;
         for &command in cmds {
             match command {
-                Command::Skip { chars } => match idx.checked_sub(chars.get().into()) {
+                Command::Skip { chars } => match idx.checked_sub(chars.into()) {
                     Some(r) => idx = r,
                     None => break,
                 },
                 Command::Delete { chars } => {
                     let end = idx;
-                    idx = idx.saturating_sub(chars.get().into());
-                    result.drain(idx..=end);
+                    idx = idx.saturating_sub(chars.into());
+                    result.drain(idx..end);
                 }
                 Command::Replace { char } => result[idx] = char,
                 Command::Insert { char } => {
@@ -199,7 +198,7 @@ impl Stem for Stemmer {
         let mut result = word.chars().collect::<Vec<char>>();
         for trie in self.tries {
             match trie.stem(self.commands, &mut result) {
-                StemResult::Continue => {},
+                StemResult::Continue => {}
                 StemResult::Unchanged => return Cow::Borrowed(word),
                 StemResult::Completed => break,
             }

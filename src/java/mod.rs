@@ -28,6 +28,8 @@ impl Stemmer {
 
 impl crate::Stem for Stemmer {
     fn stem<'a>(&self, word: &'a str) -> Cow<'a, str> {
+        // Technically this should be grapheme clusters but the java version assumes that a UTF-16 char is a single char
+        // so this should work everywhere that does.
         if word.chars().count() <= 3 {
             return Cow::Borrowed(word); // No change
         }
