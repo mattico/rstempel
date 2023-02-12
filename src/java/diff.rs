@@ -3,10 +3,11 @@ pub fn apply(orig: &str, diff: &str) -> Option<String> {
         return None;
     }
     let mut result = Vec::from_iter(orig.chars());
-    let mut pos = result.len() - 1;
+    let mut pos = result.len();
     let mut chars = diff.chars();
     // TODO: replace with next_chunk when stable
     while let (Some(cmd), Some(param)) = (chars.next(), chars.next()) {
+        pos = pos.checked_sub(1)?;
         match cmd {
             '-' => {
                 assert!(param.is_ascii_lowercase());
@@ -27,7 +28,6 @@ pub fn apply(orig: &str, diff: &str) -> Option<String> {
             }
             _ => unreachable!(),
         }
-        pos = pos.checked_sub(1)?;
     }
     Some(result.into_iter().collect())
 }
