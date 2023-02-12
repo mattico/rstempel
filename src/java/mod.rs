@@ -35,12 +35,9 @@ impl crate::Stem for Stemmer {
             Some(c) => c,
             None => return Cow::Borrowed(word),
         };
-        let res = diff::apply(word, &cmd);
-        if res.is_empty() {
-            Cow::Borrowed(word)
-        } else {
-            Cow::Owned(res)
-        }
+        diff::apply(word, &cmd)
+            .unwrap_or_else(|| word.to_owned())
+            .into()
     }
 }
 
