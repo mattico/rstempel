@@ -1,4 +1,4 @@
-use rstempel::rust::{Command, CommandSlice, Stemmer, Trie};
+use crate::rust::{Cell, Command, CommandSlice, Row, Stemmer, Trie};
 use std::num::{NonZeroU16, NonZeroU32};
 
 pub static STEMMER: Stemmer = Stemmer {

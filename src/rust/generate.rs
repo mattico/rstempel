@@ -106,7 +106,7 @@ impl RustGenerator {
         writeln!(out, "use std::num::{{NonZeroU16, NonZeroU32}};")?;
         writeln!(
             out,
-            "use rstempel::rust::{{Stemmer, Trie, Command, CommandSlice}};\n"
+            "use crate::rust::{{Cell, Command, CommandSlice, Row, Stemmer, Trie}};\n"
         )?;
         writeln!(out, "pub static STEMMER: Stemmer = Stemmer {{")?;
         writeln!(out, "commands: &[")?;

@@ -6,6 +6,11 @@ use std::{
 
 use crate::Stem;
 
+#[path = "../tables/stemmer_2000.rs"]
+mod generated_stemmer;
+
+pub use generated_stemmer::STEMMER;
+
 #[cfg(feature = "generate")]
 pub mod generate;
 
@@ -207,6 +212,43 @@ impl Stem for Stemmer {
             Cow::Borrowed(word)
         } else {
             Cow::Owned(result.into_iter().collect())
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::Stem;
+    use flate2::bufread::GzDecoder;
+    use std::fs;
+    use std::io::{prelude::*, BufReader};
+
+    #[test]
+    fn test_compare_stem_to_stempel() {
+        let path = "src/tables/polimorf-out.tab.gz";
+        let file = fs::File::open(path).unwrap();
+        let mut reader = BufReader::new(GzDecoder::new(BufReader::new(file)));
+        let mut line = String::new();
+
+        let stemmer: &Stemmer = &STEMMER;
+
+        let mut num = 0;
+        while reader.read_line(&mut line).unwrap() > 0 {
+            num += 1;
+            let mut split = line.split_ascii_whitespace();
+            let input = split.next().unwrap();
+            let output = split.next().unwrap();
+            println!("On line {} input={} output={}", num, input, output);
+
+            let ours = stemmer.stem(input);
+            if output != ours {
+                panic!(
+                    "On line {} input={} output={} ours={}",
+                    num, input, output, ours
+                );
+            }
+            line.clear();
         }
     }
 }
