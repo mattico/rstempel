@@ -107,7 +107,7 @@ impl RustGenerator {
         writeln!(out, "use std::num::{{NonZeroU16, NonZeroU32}};")?;
         writeln!(
             out,
-            "use crate::rust::{{Cell, Command, CommandSlice, Row, Stemmer, Trie}};\n"
+            "use crate::rust::{{Cell, PackedCommand, CommandSlice, Row, Stemmer, Trie}};\n"
         )?;
         let num_rows: usize = self.tries.iter().map(|t| t.rows.len()).sum();
         let num_cells: usize = self
@@ -120,12 +120,16 @@ impl RustGenerator {
             + self.tries.len() * size_of::<Trie>()
             + num_rows * size_of::<Row>()
             + num_cells * (size_of::<Cell>() + size_of::<char>())
-            + self.commands.len() * size_of::<Command>();
+            + self.commands.len() * size_of::<PackedCommand>();
         writeln!(out, "// approximate size: {} bytes", size)?;
         writeln!(out, "pub static STEMMER: Stemmer = Stemmer {{")?;
         writeln!(out, "commands: &[")?;
         for command in &self.commands {
-            Self::write_rust_command(&mut out, command)?;
+            writeln!(
+                out,
+                "PackedCommand({:#X}),",
+                PackedCommand::from(*command).0
+            )?;
         }
         writeln!(out, "],")?;
         writeln!(out, "tries: &[")?;
@@ -135,23 +139,6 @@ impl RustGenerator {
         writeln!(out, "],")?;
         writeln!(out, "}};")?;
         Ok(())
-    }
-
-    fn write_rust_command(mut out: impl io::Write, cmd: &Command) -> io::Result<()> {
-        match cmd {
-            Command::Skip { chars } => {
-                writeln!(out, "Command::Skip {{ chars: {} }},", chars)
-            }
-            Command::Delete { chars } => {
-                writeln!(out, "Command::Delete {{ chars: {} }},", chars)
-            }
-            Command::Replace { char } => {
-                writeln!(out, "Command::Replace {{ char: '{}' }},", char)
-            }
-            Command::Insert { char } => {
-                writeln!(out, "Command::Insert {{ char: '{}' }},", char)
-            }
-        }
     }
 
     fn write_rust_trie(mut out: impl io::Write, trie: &TrieBuilder) -> io::Result<()> {

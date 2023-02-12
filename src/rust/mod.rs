@@ -42,6 +42,49 @@ impl Command {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(transparent)]
+pub struct PackedCommand(u32);
+
+const SKIP: u32 = 0;
+const DELETE: u32 = 1;
+const REPLACE: u32 = 2;
+const INSERT: u32 = 3;
+
+impl From<Command> for PackedCommand {
+    fn from(value: Command) -> Self {
+        let (disc, data) = match value {
+            Command::Skip { chars } => (SKIP, chars as u32),
+            Command::Delete { chars } => (DELETE, chars as u32),
+            Command::Replace { char } => (REPLACE, char as u32),
+            Command::Insert { char } => (INSERT, char as u32),
+        };
+        debug_assert!(data < (1 << 24));
+        Self(disc << 24 | data)
+    }
+}
+
+impl From<PackedCommand> for Command {
+    fn from(value: PackedCommand) -> Self {
+        let value = value.0;
+        let disc = value >> 24;
+        let data = value & 0x1FFFFF;
+        match disc {
+            SKIP => Command::Skip { chars: data as u8 },
+            DELETE => Command::Delete { chars: data as u8 },
+            REPLACE => Command::Replace {
+                // SAFETY: PackedCommands can only be created from valid Commands with valid `char`s
+                char: unsafe { char::from_u32_unchecked(data) },
+            },
+            INSERT => Command::Replace {
+                // SAFETY: PackedCommands can only be created from valid Commands with valid `char`s
+                char: unsafe { char::from_u32_unchecked(data) },
+            },
+            _ => unreachable!("Invalid discriminant in PackedCommand"),
+        }
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 #[repr(transparent)]
 /// Represents a slice of commands in the Stemmer's commands vec, packed into a u32.
@@ -82,7 +125,7 @@ impl CommandSlice {
     }
 
     #[must_use]
-    pub fn lookup(self, commands: &[Command]) -> &[Command] {
+    pub fn lookup(self, commands: &[PackedCommand]) -> &[PackedCommand] {
         debug_assert!(!self.is_eom());
         let idx = self.start_index();
         let len = self.len();
@@ -131,7 +174,7 @@ pub enum StemResult {
 }
 
 impl Trie {
-    fn stem(&self, commands: &'static [Command], result: &mut Vec<char>) -> StemResult {
+    fn stem(&self, commands: &'static [PackedCommand], result: &mut Vec<char>) -> StemResult {
         let cmds = match self.get(result) {
             None => return StemResult::Unchanged,
             Some(c) if c.is_eom() => return StemResult::Completed,
@@ -141,7 +184,7 @@ impl Trie {
         // TODO: implement commands like in MultiTrie2 with the lengthPP stuff
         let mut idx = result.len() - 1;
         for &command in cmds {
-            match command {
+            match command.into() {
                 Command::Skip { chars } => match idx.checked_sub(chars.into()) {
                     Some(r) => idx = r,
                     None => break,
@@ -191,7 +234,7 @@ impl Trie {
 
 pub struct Stemmer {
     /// Flattened list of deduplicated command lists.
-    commands: &'static [Command],
+    commands: &'static [PackedCommand],
     tries: &'static [Trie],
 }
 
