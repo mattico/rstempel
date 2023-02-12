@@ -28,7 +28,7 @@ impl Stemmer {
 
 impl crate::Stem for Stemmer {
     fn stem<'a>(&self, word: &'a str) -> Cow<'a, str> {
-        if word.len() <= 3 {
+        if word.chars().count() <= 3 {
             return Cow::Borrowed(word); // No change
         }
         let cmd = match self.trie.get_last_on_path(word) {
