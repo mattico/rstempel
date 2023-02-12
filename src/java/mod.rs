@@ -28,7 +28,7 @@ impl Stemmer {
 
 impl crate::Stem for Stemmer {
     fn stem<'a>(&self, word: &'a str) -> Cow<'a, str> {
-        if word.len() < 3 {
+        if word.len() <= 3 {
             return Cow::Borrowed(word); // No change
         }
         let cmd = match self.trie.get_last_on_path(word) {
@@ -70,6 +70,7 @@ mod test {
             let mut split = line.split_ascii_whitespace();
             let input = split.next().unwrap();
             let output = split.next().unwrap();
+            println!("On line {} input={} output={}", num, input, output);
 
             let our_output = stemmer.stem(input);
             if output != our_output {
