@@ -1,6 +1,7 @@
 use crate::rust::{Cell, Command, CommandSlice, Row, Stemmer, Trie};
 use std::num::{NonZeroU16, NonZeroU32};
 
+// Data size: 244752 bytes
 pub static STEMMER: Stemmer = Stemmer {
     commands: &[
         Command::Delete { chars: 1 },

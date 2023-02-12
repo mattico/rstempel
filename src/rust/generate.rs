@@ -103,11 +103,25 @@ impl RustGenerator {
     }
 
     pub fn write_rust_table(&self, mut out: impl io::Write) -> io::Result<()> {
+        use std::mem::size_of;
         writeln!(out, "use std::num::{{NonZeroU16, NonZeroU32}};")?;
         writeln!(
             out,
             "use crate::rust::{{Cell, Command, CommandSlice, Row, Stemmer, Trie}};\n"
         )?;
+        let num_rows: usize = self.tries.iter().map(|t| t.rows.len()).sum();
+        let num_cells: usize = self
+            .tries
+            .iter()
+            .flat_map(|t| &t.rows)
+            .map(|r| r.cells.len())
+            .sum();
+        let size = size_of::<Stemmer>()
+            + self.tries.len() * size_of::<Trie>()
+            + num_rows * size_of::<Row>()
+            + num_cells * (size_of::<Cell>() + size_of::<char>())
+            + self.commands.len() * size_of::<Command>();
+        writeln!(out, "// approximate size: {} bytes", size)?;
         writeln!(out, "pub static STEMMER: Stemmer = Stemmer {{")?;
         writeln!(out, "commands: &[")?;
         for command in &self.commands {
