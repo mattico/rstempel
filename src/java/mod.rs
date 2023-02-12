@@ -72,11 +72,11 @@ mod test {
             let output = split.next().unwrap();
             println!("On line {} input={} output={}", num, input, output);
 
-            let our_output = stemmer.stem(input);
-            if output != our_output {
+            let ours = stemmer.stem(input);
+            if output != ours {
                 panic!(
-                    "On line {} input={} output={} our_output={}",
-                    num, input, output, our_output
+                    "On line {} input={} output={} ours={}",
+                    num, input, output, ours
                 );
             }
             line.clear();

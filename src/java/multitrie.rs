@@ -72,18 +72,21 @@ fn length_pp(cmd: &str) -> usize {
 }
 
 fn skip<'a>(trie: &Trie, i: &'a str, cnt: usize) -> Option<&'a str> {
+    if cnt == 0 {
+        return Some(i);
+    }
     let mut iter = i.char_indices();
+    let mut start = 0;
+    let mut end = i.len();
     if trie.forward {
         for _ in 0..cnt {
-            iter.next()?;
+            start = iter.next()?.0;
         }
     } else {
         for _ in 0..cnt {
-            iter.next_back()?;
+            end = iter.next_back()?.0;
         }
     }
-    let start = iter.next()?.0;
-    let end = iter.next_back()?.0;
     Some(&i[start..end])
 }
 
@@ -92,7 +95,7 @@ fn get_last_on_path_(
     key: &mut &str,
     last_key: &str,
     last_ch: &mut char,
-    p: &mut Option<String>,
+    prev_cmd: &mut Option<String>,
 ) -> Option<String> {
     let r = trie.get_last_on_path(last_key)?;
     if r == "*" {
@@ -104,10 +107,12 @@ fn get_last_on_path_(
         *last_ch = r.chars().nth_back(1)?;
     }
     if r.starts_with('-') {
-        let p = p.as_ref().unwrap_or(&r);
-        *key = skip(trie, key, length_pp(p))?;
+        if let Some(prev_cmd) = prev_cmd.as_ref() {
+            *key = skip(trie, key, length_pp(prev_cmd))?;
+        }
+        *key = skip(trie, key, length_pp(&r))?;
     }
-    *p = Some(r.clone());
+    *prev_cmd = Some(r.clone());
     Some(r)
 }
 
@@ -115,10 +120,10 @@ impl TrieGet for MultiTrie2 {
     fn get_last_on_path(&self, mut key: &str) -> Option<String> {
         let mut result = String::with_capacity(self.t.tries.len() * 2);
         let mut last_key = key;
-        let mut p = None;
+        let mut prev_cmd = None;
         let mut last_ch = ' ';
         for trie in &self.t.tries {
-            match get_last_on_path_(trie, &mut key, last_key, &mut last_ch, &mut p) {
+            match get_last_on_path_(trie, &mut key, last_key, &mut last_ch, &mut prev_cmd) {
                 None => break,
                 Some(r) => result.push_str(&r),
             }
@@ -158,5 +163,15 @@ mod tests {
                 panic!("Loading trie {} failed with {:?}", path, e);
             }
         }
+    }
+
+    #[test]
+    fn test_lookup_multi2() {
+        let path = "src/tables/stemmer_2000.out";
+        let mut reader = DataInput::new(io::BufReader::new(fs::File::open(path).unwrap()));
+        let _params = reader.read_string().unwrap();
+        let trie = MultiTrie2::deserialize(&mut reader).unwrap();
+        let cmd = trie.get_last_on_path("Abadan").unwrap();
+        assert_eq!(cmd, "Ia-e");
     }
 }
