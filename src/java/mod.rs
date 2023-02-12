@@ -3,10 +3,10 @@ use serialize::{DataInput, JavaDeserialize};
 use std::{borrow::Cow, io};
 use trie::{Trie, TrieGet};
 
-mod diff;
-mod multitrie;
-mod serialize;
-mod trie;
+pub(crate) mod diff;
+pub(crate) mod multitrie;
+pub(crate) mod serialize;
+pub(crate) mod trie;
 
 pub struct Stemmer {
     trie: Box<dyn TrieGet>,
@@ -27,16 +27,19 @@ impl Stemmer {
 }
 
 impl crate::Stem for Stemmer {
-    fn stem<'a>(&self, word: &'a str) -> Option<Cow<'a, str>> {
+    fn stem<'a>(&self, word: &'a str) -> Cow<'a, str> {
         if word.len() < 3 {
-            return Some(Cow::Borrowed(word));
+            return Cow::Borrowed(word); // No change
         }
-        let cmd = self.trie.get_last_on_path(word)?;
+        let cmd = match self.trie.get_last_on_path(word) {
+            Some(c) => c,
+            None => return Cow::Borrowed(word),
+        };
         let res = diff::apply(word, &cmd);
         if res.is_empty() {
-            None
+            Cow::Borrowed(word)
         } else {
-            Some(Cow::Owned(res))
+            Cow::Owned(res)
         }
     }
 }
@@ -64,18 +67,18 @@ mod test {
         let mut num = 0;
         while reader.read_line(&mut line).unwrap() > 0 {
             num += 1;
-            let mut line = line.split_ascii_whitespace();
-            let input = line.next().unwrap();
-            let output = line.next().unwrap();
+            let mut split = line.split_ascii_whitespace();
+            let input = split.next().unwrap();
+            let output = split.next().unwrap();
 
-            if let Some(our_output) = stemmer.stem(input) {
-                if output != our_output {
-                    panic!(
-                        "On line {} input={} output={} our_output={}",
-                        num, input, output, our_output
-                    );
-                }
+            let our_output = stemmer.stem(input);
+            if output != our_output {
+                panic!(
+                    "On line {} input={} output={} our_output={}",
+                    num, input, output, our_output
+                );
             }
+            line.clear();
         }
     }
 }

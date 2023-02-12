@@ -91,8 +91,6 @@ impl JavaDeserialize for Cell {
 #[derive(Default, Debug, Clone)]
 pub struct Row {
     pub cells: BTreeMap<char, Cell>,
-    pub uniform_count: u32,
-    pub uniform_skip: u32,
 }
 
 impl Row {

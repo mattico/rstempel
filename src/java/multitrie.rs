@@ -3,11 +3,11 @@ use super::trie::{Trie, TrieGet};
 use std::io;
 
 pub struct MultiTrie {
-    tries: Vec<Trie>,
+    pub tries: Vec<Trie>,
     #[allow(dead_code)]
-    forward: bool,
+    pub forward: bool,
     #[allow(dead_code)]
-    by: i32,
+    pub by: i32,
 }
 
 impl JavaDeserialize for MultiTrie {
@@ -38,7 +38,7 @@ impl TrieGet for MultiTrie {
 }
 
 pub struct MultiTrie2 {
-    t: MultiTrie,
+    pub t: MultiTrie,
 }
 
 impl JavaDeserialize for MultiTrie2 {
