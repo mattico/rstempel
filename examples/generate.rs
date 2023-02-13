@@ -7,7 +7,7 @@ use rstempel::rust::generate::RustGenerator;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = Path::new("src/tables/stemmer_2000.out.gz");
-    let license = r"Converted from `stemmer_2000.out` from Stempel by Andrzej Bialecki. http://www.getopt.org/stempel/index.html
+    let license = "Converted from `stemmer_2000.out` from Stempel by Andrzej Bialecki. http://www.getopt.org/stempel/index.html\n\
     Offered under the Apache License 2.0. https://www.apache.org/licenses/LICENSE-2.0";
     convert_java_table(path, license)?;
 

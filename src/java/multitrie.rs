@@ -138,8 +138,8 @@ impl TrieGet for MultiTrie2 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
     use flate2::bufread::GzDecoder;
+    use std::fs;
 
     #[test]
     fn test_lookup_multi2() {
