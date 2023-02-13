@@ -1,14 +1,16 @@
 use std::{
     borrow::Cow,
-    collections::HashMap,
     num::{NonZeroU16, NonZeroU32},
 };
 
 use crate::Stem;
 
-#[path = "../tables/stemmer_2000.rs"]
+
+#[cfg(feature = "rust_embedded_stempel")]
+#[path = "../tables/stemmer_2000.out.rs"]
 mod generated_stemmer;
 
+#[cfg(feature = "rust_embedded_stempel")]
 pub use generated_stemmer::STEMMER;
 
 #[cfg(feature = "generate")]
@@ -317,7 +319,7 @@ mod test {
 
     #[test]
     fn test_compare_stem_to_stempel() {
-        let path = "src/tables/polimorf-out.tab.gz";
+        let path = "src/tables/polimorf_words_stemmed.tab.gz";
         let file = fs::File::open(path).unwrap();
         let mut reader = BufReader::new(GzDecoder::new(BufReader::new(file)));
         let mut line = String::new();

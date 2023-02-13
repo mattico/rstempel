@@ -2,9 +2,8 @@ use super::*;
 use crate::java::multitrie::MultiTrie2;
 use crate::java::serialize::JavaDeserialize;
 use crate::java::trie::{Row as JRow, Trie as JTrie};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::io;
-use std::path::Path;
 
 #[derive(Default)]
 struct RowBuilder {
@@ -23,25 +22,14 @@ pub struct RustGenerator {
 }
 
 impl RustGenerator {
-    pub fn convert_java_table(input: &Path) -> io::Result<()> {
+    pub fn load_java_table(input: impl io::Read) -> io::Result<Self> {
         use crate::java::serialize::DataInput;
-        use std::fs;
 
-        let output = input.with_extension("rs");
-
-        let input = fs::File::open(input)?;
-        let input = io::BufReader::new(input);
         let mut input = DataInput::new(input);
         let _ = input.read_string()?;
         let input = MultiTrie2::deserialize(&mut input)?;
-
-        let output = fs::File::create(output)?;
-        let output = io::BufWriter::new(output);
-
         let gen = Self::convert_java_multitrie(&input);
-        gen.write_rust_table(output)?;
-
-        Ok(())
+        Ok(gen)
     }
 
     pub fn convert_java_multitrie(jmultitrie: &MultiTrie2) -> Self {

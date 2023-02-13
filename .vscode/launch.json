@@ -15,7 +15,7 @@
         {
             "name": "Launch Rust and Java",
             "configurations": [
-                "Rust: Launch Bin Stem",
+                "Rust: Launch Stemmer",
                 "Java: Launch Stemmer"
             ],
         }
@@ -37,11 +37,11 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Rust: Launch Bin Stem",
+            "name": "Rust: Launch Stemmer",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin",
+                    "--example",
                     "stem_rust"
                 ]
             },

@@ -1,3 +1,6 @@
+// Converted from `stemmer_2000.out` from Stempel by Andrzej Bialecki. http://www.getopt.org/stempel/index.html
+//     Offered under the Apache License 2.0. https://www.apache.org/licenses/LICENSE-2.0
+
 use crate::rust::{Cell, Command, CommandSlice, Row, Stemmer, Trie};
 use std::num::{NonZeroU16, NonZeroU32};
 

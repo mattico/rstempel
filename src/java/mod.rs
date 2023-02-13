@@ -51,7 +51,7 @@ mod test {
 
     #[test]
     fn test_compare_stem_to_stempel() {
-        let path = "src/tables/polimorf-out.tab.gz";
+        let path = "src/tables/polimorf_words_stemmed.tab.gz";
         let file = fs::File::open(path).unwrap();
         let mut reader = BufReader::new(GzDecoder::new(BufReader::new(file)));
         let mut line = String::new();

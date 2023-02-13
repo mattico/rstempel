@@ -1,7 +1,10 @@
 [package]
 name = "rstempel"
+authors = ["Matt Ickstadt <mattico8@gmail.com>"]
 version = "0.1.0"
 edition = "2021"
+license = "BSD-4-Clause AND BSD-2-Clause AND Apache-2.0"
+exclude = [".*"]
 
 [dependencies]
 byteorder = { version = "1.4.3", optional = true }
@@ -12,7 +15,12 @@ unicode-normalization = { version = "0.1.22", optional = true }
 flate2 = "1.0.25"
 
 [features]
-default = ["java", "rust", "generate"]
+default = ["rust"]
+# Enables the stemmer which loads serialized stemming tables from the Java version of stempel.
 java = ["byteorder", "cesu8"]
+# Enables the stemmer which loads stemming tables converted to Rust code.
 rust = ["unicode-normalization"]
+# Enables the `rstempel::rust::generate` module, which generates Rust stemming tables from Java tables.
 generate = ["java", "rust"]
+# Embedds a stemmer table converted from stemmer_2000.out from the stempel project. Approximately 240kiB.
+rust_embedded_stempel = ["rust"]
