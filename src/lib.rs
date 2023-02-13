@@ -6,10 +6,11 @@
 //! 
 //! ```toml
 //! [dependencies]
-//! rstempel = { version = "0.1.0", features = ["rust_embedded_stempel"] }
+//! rstempel = "0.1.0"
 //! ```
 //! 
 //! ```rust
+//! # let word = "foo";
 //! use rstempel::Stem;
 //! let stemmer = &rstempel::rust::STEMMER;
 //! let stemmed = stemmer.stem(word);

@@ -47,19 +47,17 @@ mod test {
     use crate::Stem;
     use flate2::bufread::GzDecoder;
     use std::fs;
-    use std::io::{prelude::*, BufReader};
+    use std::io::prelude::*;
 
     #[test]
     fn test_compare_stem_to_stempel() {
-        let path = "src/tables/polimorf_words_stemmed.tab.gz";
-        let file = fs::File::open(path).unwrap();
-        let mut reader = BufReader::new(GzDecoder::new(BufReader::new(file)));
+        let file = fs::File::open("src/tables/polimorf_words_stemmed.tab.gz").unwrap();
+        let mut reader = io::BufReader::new(GzDecoder::new(io::BufReader::new(file)));
         let mut line = String::new();
 
-        let stemmer = Stemmer::load(BufReader::new(
-            fs::File::open("src/tables/stemmer_2000.out").unwrap(),
-        ))
-        .unwrap();
+        let input = fs::File::open("src/tables/stemmer_2000.out.gz").unwrap();
+        let input = io::BufReader::new(GzDecoder::new(io::BufReader::new(input)));
+        let stemmer = Stemmer::load(input).unwrap();
 
         let mut num = 0;
         while reader.read_line(&mut line).unwrap() > 0 {

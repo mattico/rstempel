@@ -6,6 +6,18 @@ edition = "2021"
 license = "BSD-4-Clause AND BSD-2-Clause AND Apache-2.0"
 exclude = [".*"]
 
+[[example]]
+name = "generate"
+required-features = ["generate"]
+
+[[example]]
+name = "stem_java"
+required-features = ["java"]
+
+[[example]]
+name = "stem_rust"
+required-features = ["rust", "rust_embedded_stempel"]
+
 [dependencies]
 byteorder = { version = "1.4.3", optional = true }
 cesu8 = { version = "1.1.0", optional = true }
@@ -15,7 +27,7 @@ unicode-normalization = { version = "0.1.22", optional = true }
 flate2 = "1.0.25"
 
 [features]
-default = ["rust"]
+default = ["rust", "rust_embedded_stempel"]
 # Enables the stemmer which loads serialized stemming tables from the Java version of stempel.
 java = ["byteorder", "cesu8"]
 # Enables the stemmer which loads stemming tables converted to Rust code.

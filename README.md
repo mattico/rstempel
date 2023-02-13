@@ -6,7 +6,7 @@ A rust port of the [stempel Polish stemmer](http://www.getopt.org/stempel/index.
 
 ```toml
 [dependencies]
-rstempel = { version = "0.1.0", features = ["rust_embedded_stempel"] }
+rstempel = "0.1.0"
 ```
 
 ```rust

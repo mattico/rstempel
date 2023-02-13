@@ -317,6 +317,7 @@ mod test {
     use std::fs;
     use std::io::{prelude::*, BufReader};
 
+    #[cfg(feature = "rust_embedded_stempel")]
     #[test]
     fn test_compare_stem_to_stempel() {
         let path = "src/tables/polimorf_words_stemmed.tab.gz";

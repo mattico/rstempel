@@ -139,37 +139,16 @@ impl TrieGet for MultiTrie2 {
 mod tests {
     use super::*;
     use std::fs;
-
-    #[test]
-    fn test_load_tries() {
-        let trie_files = [
-            "src/tables/stemmer_100.out",
-            "src/tables/stemmer_200.out",
-            "src/tables/stemmer_500.out",
-            "src/tables/stemmer_700.out",
-            "src/tables/stemmer_1000.out",
-            "src/tables/stemmer_2000.out",
-        ];
-        for path in trie_files {
-            let mut reader = DataInput::new(io::BufReader::new(fs::File::open(path).unwrap()));
-            let multi = reader.read_string().unwrap();
-            let multi = multi.contains(['M', 'm']);
-            assert!(
-                multi,
-                "Expected stemmer table {} to contain a multitrie",
-                path
-            );
-            if let Err(e) = MultiTrie2::deserialize(&mut reader) {
-                panic!("Loading trie {} failed with {:?}", path, e);
-            }
-        }
-    }
+    use flate2::bufread::GzDecoder;
 
     #[test]
     fn test_lookup_multi2() {
-        let path = "src/tables/stemmer_2000.out";
-        let mut reader = DataInput::new(io::BufReader::new(fs::File::open(path).unwrap()));
-        let _params = reader.read_string().unwrap();
+        let path = "src/tables/stemmer_2000.out.gz";
+        let input = fs::File::open(path).unwrap();
+        let input = io::BufReader::new(GzDecoder::new(io::BufReader::new(input)));
+        let mut reader = DataInput::new(input);
+        let params = reader.read_string().unwrap();
+        assert!(params.contains('M'));
         let trie = MultiTrie2::deserialize(&mut reader).unwrap();
         let cmd = trie.get_cmd("Abadan").unwrap();
         assert_eq!(cmd, "Ia-e");
