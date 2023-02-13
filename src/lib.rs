@@ -16,6 +16,12 @@
 //! let stemmed = stemmer.stem(word);
 //! ```
 //! 
+//! ## Unicode Normalization
+//! 
+//! It is recommended to Unicode normalize (NFC) the input before stemming, as combining diacritical marks are not
+//! handled correctly on their own. The [unicode-normalization crate](https://github.com/unicode-rs/unicode-normalization)
+//! can be used for this.
+//! 
 //! ## Stemmer Implementations
 //! 
 //! Two implementations of stemmers are provided, in the `java` and `rust` modules, each enabled by the

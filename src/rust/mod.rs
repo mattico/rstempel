@@ -5,7 +5,6 @@ use std::{
 
 use crate::Stem;
 
-
 #[cfg(feature = "rust_embedded_stempel")]
 #[path = "../tables/stemmer_2000.out.rs"]
 mod generated_stemmer;
@@ -199,18 +198,16 @@ pub struct Stemmer {
 }
 
 impl Stem for Stemmer {
-    // TODO: normalization and returning Cow::Owned breaks the API contract a bit
     fn stem<'a>(&self, word: &'a str) -> Cow<'a, str> {
-        let word = normalized(word);
         if word.chars().count() <= 3 {
-            return word;
+            return Cow::Borrowed(word);
         }
         let result = word.chars().collect::<Vec<char>>();
         let cmds = match self.get_cmd(&result) {
             Some(c) => c,
-            None => return word,
+            None => return Cow::Borrowed(word),
         };
-        apply_edits(result, &cmds).map_or(word, Cow::from)
+        apply_edits(result, &cmds).map_or(Cow::Borrowed(word), Cow::from)
     }
 }
 
@@ -288,24 +285,6 @@ impl Stemmer {
             }
         }
         Some(result)
-    }
-}
-
-pub fn normalized(input: &str) -> Cow<'_, str> {
-    use unicode_normalization::{is_nfc_quick, IsNormalized, UnicodeNormalization};
-    match is_nfc_quick(input.chars()) {
-        IsNormalized::Yes => Cow::Borrowed(input),
-        _ => input.chars().nfc().collect::<String>().into(),
-    }
-}
-
-pub fn normalize(input: &mut String) {
-    use unicode_normalization::{is_nfc_quick, IsNormalized, UnicodeNormalization};
-    match is_nfc_quick(input.chars()) {
-        IsNormalized::Yes => {}
-        _ => {
-            *input = input.chars().nfc().collect::<String>();
-        }
     }
 }
 
