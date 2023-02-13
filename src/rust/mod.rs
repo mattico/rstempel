@@ -14,7 +14,7 @@ pub use generated_stemmer::STEMMER;
 #[cfg(feature = "generate")]
 pub mod generate;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Command {
     Skip { chars: u8 },
     Delete { chars: u8 },
@@ -22,17 +22,28 @@ pub enum Command {
     Insert { char: char },
 }
 
+impl std::fmt::Display for Command {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Command::Skip { chars } => write!(f, "SKP {}", chars),
+            Command::Delete { chars } => write!(f, "DEL {}", chars),
+            Command::Replace { char } => write!(f, "SET {}", char),
+            Command::Insert { char } => write!(f, "INS {}", char),
+        }
+    }
+}
+
 impl Command {
     pub fn parse(cmd: char, param: char) -> Option<Self> {
         match cmd {
             '-' => {
                 assert!(param.is_ascii_lowercase());
-                let chars = 1 + (param as u8) - b'a';
+                let chars = (param as u8) - b'a';
                 Some(Self::Skip { chars })
             }
             'D' => {
                 assert!(param.is_ascii_lowercase());
-                let chars = 1 + (param as u8) - b'a';
+                let chars = (param as u8) - b'a';
                 Some(Self::Delete { chars })
             }
             'R' => Some(Self::Replace { char: param }),
@@ -67,7 +78,7 @@ impl Command {
 
     fn length_pp(&self) -> usize {
         match *self {
-            Command::Skip { chars } | Command::Delete { chars } => chars as usize,
+            Command::Skip { chars } | Command::Delete { chars } => chars as usize + 1,
             Command::Replace { .. } => 1,
             Command::Insert { .. } => 0,
         }
@@ -81,8 +92,8 @@ pub struct CommandSlice(pub NonZeroU32);
 
 impl CommandSlice {
     #[must_use]
-    pub fn new_eom() -> Self {
-        Self(NonZeroU32::new(u32::MAX).unwrap())
+    pub const fn new_eom() -> Self {
+        Self(unsafe { NonZeroU32::new_unchecked(u32::MAX) })
     }
 
     #[must_use]
@@ -157,14 +168,19 @@ impl Trie {
     fn get(&self, word: &[char]) -> Option<CommandSlice> {
         let mut row = self.rows[0];
         let mut last = None;
-        for &ch in word.iter().rev() {
+        for (i, &ch) in word.iter().rev().enumerate() {
             if let Some(cell) = row.get(ch) {
                 if let Some(cmds) = cell.cmds {
                     last = Some(cmds);
                 }
+                if i == word.len() - 1 {
+                    break; // Don't check references on last char
+                }
                 if let Some(next_row) = cell.refr {
                     let next_row = (next_row.get() - 1) as usize;
                     row = self.rows[next_row];
+                } else {
+                    break;
                 }
             } else {
                 break;
@@ -181,16 +197,18 @@ pub struct Stemmer {
 }
 
 impl Stem for Stemmer {
+    // TODO: normalization and returning Cow::Owned breaks the API contract a bit
     fn stem<'a>(&self, word: &'a str) -> Cow<'a, str> {
+        let word = normalized(word);
         if word.chars().count() <= 3 {
-            return Cow::Borrowed(word);
+            return word;
         }
         let result = word.chars().collect::<Vec<char>>();
         let cmds = match self.get_cmd(&result) {
             Some(c) => c,
-            None => return Cow::Borrowed(word),
+            None => return word,
         };
-        apply_edits(result, &cmds).map_or(Cow::Borrowed(word), Cow::from)
+        apply_edits(result, &cmds).map_or(word, Cow::from)
     }
 }
 
@@ -211,6 +229,7 @@ fn apply_edits(mut result: Vec<char>, cmds: &[Command]) -> Option<String> {
                 result.insert(usize::try_from(pos).ok()?, char);
             }
         }
+        println!("{} -> {}", command, result.iter().collect::<String>());
         pos -= 1;
     }
     if result.is_empty() {
@@ -235,6 +254,7 @@ fn skip(key: &mut &[char], cmds: &[Command]) -> bool {
 
 impl Stemmer {
     fn get_cmd(&self, mut key: &[char]) -> Option<Vec<Command>> {
+        let startKey = key.iter().collect::<String>();
         let mut result = Vec::new();
         let mut last_key = key;
         let mut prev_cmds = None;
@@ -267,7 +287,26 @@ impl Stemmer {
                 last_key = key;
             }
         }
+        println!("get_cmd({}) -> {:?}", startKey, result);
         Some(result)
+    }
+}
+
+pub fn normalized(input: &str) -> Cow<'_, str> {
+    use unicode_normalization::{is_nfc_quick, IsNormalized, UnicodeNormalization};
+    match is_nfc_quick(input.chars()) {
+        IsNormalized::Yes => Cow::Borrowed(input),
+        _ => input.chars().nfc().collect::<String>().into(),
+    }
+}
+
+pub fn normalize(input: &mut String) {
+    use unicode_normalization::{is_nfc_quick, IsNormalized, UnicodeNormalization};
+    match is_nfc_quick(input.chars()) {
+        IsNormalized::Yes => {}
+        _ => {
+            *input = input.chars().nfc().collect::<String>();
+        }
     }
 }
 
@@ -278,6 +317,20 @@ mod test {
     use flate2::bufread::GzDecoder;
     use std::fs;
     use std::io::{prelude::*, BufReader};
+
+    #[test]
+    fn test_has_eom() {
+        let stemmer: &Stemmer = &STEMMER;
+        let num_eom: usize = stemmer
+            .tries
+            .iter()
+            .flat_map(|t| t.rows)
+            .flat_map(|r| r.cells)
+            .flat_map(|c| c.cmds)
+            .filter(|c| c.is_eom())
+            .count();
+        assert!(num_eom > 0);
+    }
 
     #[test]
     fn test_compare_stem_to_stempel() {

@@ -56,8 +56,9 @@ impl RustGenerator {
         let mut trie = TrieBuilder {
             rows: Vec::with_capacity(jtrie.rows.len()),
         };
-        for ele in &jtrie.cmds {
-            self.convert_java_command(ele);
+        for cmds in &jtrie.cmds {
+            let cs = self.convert_java_command(cmds);
+            self.command_map.insert(cmds.into(), cs);
         }
         for jrow in &jtrie.rows {
             let row = self.convert_java_row(jtrie, jrow);
@@ -81,16 +82,14 @@ impl RustGenerator {
             self.commands.push(cmd);
         }
         let len = self.commands.len() - idx;
-        let cs = CommandSlice::new(idx, len);
-        self.command_map.insert(cmds.into(), cs);
-        cs
+        CommandSlice::new(idx, len)
     }
 
     fn convert_java_row(&mut self, jtrie: &JTrie, row: &JRow) -> RowBuilder {
         let mut result = RowBuilder::default();
         for (&ch, cell) in &row.cells {
             let refr = cell.refr.map(|r| {
-                NonZeroU16::new(r.try_into().expect("Row index did not fit in u16")).unwrap()
+                NonZeroU16::new((r + 1).try_into().expect("Row index did not fit in u16")).unwrap()
             });
             let cmds = cell
                 .cmd
@@ -194,6 +193,7 @@ impl RustGenerator {
         };
         write!(out, ", cmds: ")?;
         match cell.cmds {
+            Some(cmds) if cmds.is_eom() => write!(out, "Some(CommandSlice::new_eom())")?,
             Some(cmds) => write!(
                 out,
                 "Some(CommandSlice(unsafe {{ NonZeroU32::new_unchecked({}) }}))",
