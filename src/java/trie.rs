@@ -122,10 +122,7 @@ impl JavaDeserialize for Row {
             cells.insert(ch, cell);
         }
 
-        Ok(Self {
-            cells,
-            ..Default::default()
-        })
+        Ok(Self { cells })
     }
 }
 
