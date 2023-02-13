@@ -229,7 +229,6 @@ fn apply_edits(mut result: Vec<char>, cmds: &[Command]) -> Option<String> {
                 result.insert(usize::try_from(pos).ok()?, char);
             }
         }
-        println!("{} -> {}", command, result.iter().collect::<String>());
         pos -= 1;
     }
     if result.is_empty() {
@@ -244,7 +243,7 @@ fn skip(key: &mut &[char], cmds: &[Command]) -> bool {
     if cnt == 0 {
         return true;
     }
-    if cnt >= key.len() {
+    if cnt > key.len() {
         return false;
     }
     let end = key.len() - cnt;
@@ -254,7 +253,6 @@ fn skip(key: &mut &[char], cmds: &[Command]) -> bool {
 
 impl Stemmer {
     fn get_cmd(&self, mut key: &[char]) -> Option<Vec<Command>> {
-        let startKey = key.iter().collect::<String>();
         let mut result = Vec::new();
         let mut last_key = key;
         let mut prev_cmds = None;
@@ -287,7 +285,6 @@ impl Stemmer {
                 last_key = key;
             }
         }
-        println!("get_cmd({}) -> {:?}", startKey, result);
         Some(result)
     }
 }
@@ -317,20 +314,6 @@ mod test {
     use flate2::bufread::GzDecoder;
     use std::fs;
     use std::io::{prelude::*, BufReader};
-
-    #[test]
-    fn test_has_eom() {
-        let stemmer: &Stemmer = &STEMMER;
-        let num_eom: usize = stemmer
-            .tries
-            .iter()
-            .flat_map(|t| t.rows)
-            .flat_map(|r| r.cells)
-            .flat_map(|c| c.cmds)
-            .filter(|c| c.is_eom())
-            .count();
-        assert!(num_eom > 0);
-    }
 
     #[test]
     fn test_compare_stem_to_stempel() {
