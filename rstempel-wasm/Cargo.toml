@@ -1,0 +1,18 @@
+[package]
+name = "rstempel-wasm"
+authors = ["Matt Ickstadt <mattico8@gmail.com>"]
+version = "0.1.0"
+edition = "2021"
+license = "BSD-4-Clause AND BSD-2-Clause AND Apache-2.0"
+exclude = [".*"]
+repository = "https://github.com/mattico/rstempel"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+rstempel = { version = "0.1.0", path = ".." }
+wasm-bindgen = "0.2.84"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ['-Os']

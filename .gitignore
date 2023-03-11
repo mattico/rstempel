@@ -1,3 +1,6 @@
 /target
 /Cargo.lock
 stempel/
+node_modules/
+dist/
+pkg/

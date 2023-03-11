@@ -8,6 +8,12 @@ exclude = [".*"]
 readme = "README.md"
 repository = "https://github.com/mattico/rstempel"
 
+[workspace]
+members = ["rstempel-wasm"]
+
+[profile.release]
+lto = "fat"
+
 [[example]]
 name = "generate"
 required-features = ["generate"]
