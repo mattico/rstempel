@@ -1,7 +1,7 @@
 use super::*;
-use crate::java::multitrie::MultiTrie2;
-use crate::java::serialize::JavaDeserialize;
-use crate::java::trie::{Row as JRow, Trie as JTrie};
+use crate::external::multitrie::MultiTrie2;
+use crate::external::serialize::JavaDeserialize;
+use crate::external::trie::{Row as JRow, Trie as JTrie};
 use std::collections::{BTreeMap, HashMap};
 use std::io;
 
@@ -23,7 +23,7 @@ pub struct RustGenerator {
 
 impl RustGenerator {
     pub fn load_java_table(input: impl io::Read) -> io::Result<Self> {
-        use crate::java::serialize::DataInput;
+        use crate::external::serialize::DataInput;
 
         let mut input = DataInput::new(input);
         let _ = input.read_string()?;
@@ -94,7 +94,7 @@ impl RustGenerator {
         writeln!(out, "use std::num::{{NonZeroU16, NonZeroU32}};")?;
         writeln!(
             out,
-            "use crate::rust::{{Cell, Command, CommandSlice, Row, Stemmer, Trie}};\n"
+            "use crate::embedded::{{Cell, Command, CommandSlice, Row, Stemmer, Trie}};\n"
         )?;
         let num_rows: usize = self.tries.iter().map(|t| t.rows.len()).sum();
         let num_cells: usize = self

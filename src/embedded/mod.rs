@@ -5,11 +5,11 @@ use std::{
 
 use crate::Stem;
 
-#[cfg(feature = "rust_embedded_stempel")]
+#[cfg(feature = "table_2000")]
 #[path = "../tables/stemmer_2000.out.rs"]
 mod generated_stemmer;
 
-#[cfg(feature = "rust_embedded_stempel")]
+#[cfg(feature = "table_2000")]
 pub use generated_stemmer::STEMMER;
 
 #[cfg(feature = "generate")]
@@ -296,7 +296,7 @@ mod test {
     use std::fs;
     use std::io::{prelude::*, BufReader};
 
-    #[cfg(feature = "rust_embedded_stempel")]
+    #[cfg(feature = "table_2000")]
     #[test]
     fn test_compare_stem_to_stempel() {
         let path = "src/tables/polimorf_words_stemmed.tab.gz";

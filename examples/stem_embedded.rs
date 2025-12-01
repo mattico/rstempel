@@ -7,7 +7,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let word = args
         .get(1)
         .expect("Missing stem word argument in position 1");
-    let stemmer = &rstempel::rust::STEMMER;
+    let stemmer = &rstempel::embedded::STEMMER;
     let stemmed = stemmer.stem(word);
     println!("{}\t{}", word, stemmed);
     Ok(())

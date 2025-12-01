@@ -3,7 +3,7 @@ use std::fs;
 use std::io::{self, Write};
 use std::path::Path;
 
-use rstempel::rust::generate::RustGenerator;
+use rstempel::embedded::generate::RustGenerator;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = Path::new("src/tables/stemmer_2000.out.gz");

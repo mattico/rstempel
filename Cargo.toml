@@ -19,12 +19,12 @@ name = "generate"
 required-features = ["generate"]
 
 [[example]]
-name = "stem_java"
-required-features = ["java"]
+name = "stem_external"
+required-features = ["external"]
 
 [[example]]
-name = "stem_rust"
-required-features = ["rust", "rust_embedded_stempel"]
+name = "stem_embedded"
+required-features = ["embedded", "table_2000"]
 
 [dependencies]
 byteorder = { version = "1.4.3", optional = true }
@@ -34,12 +34,12 @@ cesu8 = { version = "1.1.0", optional = true }
 flate2 = "1.0.25"
 
 [features]
-default = ["rust", "rust_embedded_stempel"]
-# Enables the stemmer which loads serialized stemming tables from the Java version of stempel.
-java = ["byteorder", "cesu8"]
-# Enables the stemmer which loads stemming tables converted to Rust code.
-rust = []
-# Enables the `rstempel::rust::generate` module, which generates Rust stemming tables from Java tables.
-generate = ["java", "rust"]
-# Embedds a stemmer table converted from stemmer_2000.out from the stempel project. Approximately 240kiB.
-rust_embedded_stempel = ["rust"]
+default = ["embedded", "table_2000"]
+# Enables the stemmer which loads serialized stemming tables from external files.
+external = ["byteorder", "cesu8"]
+# Enables the stemmer which uses embedded stemming tables converted to Rust code.
+embedded = []
+# Enables the `rstempel::embedded::generate` module, which generates Rust stemming tables from external files.
+generate = ["external", "embedded"]
+# Embeds a stemmer table converted from stemmer_2000.out from the stempel project. Approximately 240kiB.
+table_2000 = ["embedded"]

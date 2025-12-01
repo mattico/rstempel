@@ -11,7 +11,7 @@ rstempel = "0.1.0"
 
 ```rust
 use rstempel::Stem;
-let stemmer = &rstempel::rust::STEMMER;
+let stemmer = &rstempel::embedded::STEMMER;
 let stemmed = stemmer.stem(word);
 ```
 
@@ -23,15 +23,15 @@ can be used for this.
 
 ## Stemmer Implementations
 
-Two implementations of stemmers are provided, in the `java` and `rust` modules, each enabled by the
+Two implementations of stemmers are provided, in the `external` and `embedded` modules, each enabled by the
 corresponding cargo feature.
 
-The `rust` stemmer, enabled by default, uses tables which can be stored directly as Rust code in a `static`.
-This offers good performance, and simple usage, but very large tables can be difficult to compile.
-The tables can be converted from a Java serialized table, see `examples/generate.rs`. The `rust_embedded_stempel`
-feature embeds a ~240KiB stemming table converted from the stempel stemmer project as `rstempel::rust::STEMMER`.
+The `embedded` stemmer, enabled by default, uses tables which can be stored directly as Rust code in a `static`.
+This offers good performance, and simple usage, but very large tables can be slow to compile.
+The tables can be converted from external serialized files, see `examples/generate.rs`. The `table_2000`
+feature embeds a ~240KiB stemming table converted from the stempel stemmer project as `rstempel::embedded::STEMMER`.
 
-The `java` stemmer can load tables in the format used by the Java `stempel` implementation. A compressed stemming
+The `external` stemmer can load tables in the format used by the Java `stempel` implementation. A compressed stemming
 table from the stempel stemmer project is included in `src/tables/stemmer_2000.out.gz`. A much larger and more
 accurate stemming table can be sourced from [pystempel](https://github.com/dzieciou/pystempel).
 

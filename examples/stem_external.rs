@@ -1,5 +1,5 @@
 use flate2::bufread::GzDecoder;
-use rstempel::java::Stemmer;
+use rstempel::external::Stemmer;
 use rstempel::Stem;
 use std::env;
 use std::error::Error;

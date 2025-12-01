@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use rstempel::Stem;
-use rstempel::rust::STEMMER;
+use rstempel::embedded::STEMMER;
 
 #[wasm_bindgen]
 pub fn stem(word: &str) -> String {
