@@ -3,7 +3,7 @@
 {
 	"name": "Rust",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/rust:0-1-bullseye",
+	"image": "mcr.microsoft.com/devcontainers/rust:2-1-trixie",
 	"features": {
 		"ghcr.io/devcontainers/features/java:1": {},
 		"ghcr.io/stuartleeks/dev-container-features/shell-history:0": {},
@@ -15,6 +15,7 @@
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": {
 		"rustc version": "rustc --version",
+		"javac version": "javac --version",
 		"install wasm-pack": "cargo install wasm-pack",
 		"install binaryen": "sudo apt update && sudo apt install binaryen"
 	}
