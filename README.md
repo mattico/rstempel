@@ -1,6 +1,6 @@
 # rstempel
 
-A rust port of the [stempel Polish stemmer](http://www.getopt.org/stempel/index.html).
+An **unfinished WIP* Rust port of the [stempel Polish stemmer](http://www.getopt.org/stempel/index.html).
 
 ## Example
 
